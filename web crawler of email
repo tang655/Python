@@ -1,0 +1,129 @@
+import re
+from bs4 import BeautifulSoup
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.support.select import Select
+from urllib.request import urlopen
+import urllib
+import requests
+from selenium import webdriver
+import json
+import time
+
+if __name__ == '__main__':
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',#'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/603.2.4 (KHTML, like Gecko) Version/10.1.1 Safari/603.2.4',
+        'Connection': 'keep-alive'
+    }
+
+    cap = DesiredCapabilities.PHANTOMJS.copy()
+
+    for key, value in headers.items():
+        cap['phantomjs.page.customHeaders.{}'.format(
+            key)] = value
+
+    t = open('E://teacher1.txt', 'a+', encoding='utf-8')
+    rex = re.compile(r'[a-zA-Z0-9\._+]{1,}@[a-zA-Z0-9\.]{1,}')
+    #rex = re.compile(r'[a-zA-Z0-9\._+]{1,}\sat\s[\sa-zA-Z0-9\._+]{1,}')
+
+    url = 'http://jsj.imau.edu.cn/szdw/jsml.htm'
+
+    #urls = []
+    #for i in range(207, 600):
+    #    urls.append('http://sci.bupt.edu.cn/content/content.php?p=3_9_' + str(i))
+
+    driver = webdriver.PhantomJS(executable_path='D://phantomjs/bin/phantomjs',desired_capabilities=cap, service_args=['--load-images=false'])
+    driver.implicitly_wait(1)
+    #driver.set_window_size(1366,768)
+    print(3)
+
+    driver.get(url)
+    time.sleep(2)
+    '''
+    driver.switch_to.frame(driver.find_element_by_xpath("//frame[@src='http://cs.scut.edu.cn/']"))
+    driver.find_element_by_xpath("//a[@href='/szdw/']").click()
+    #driver.switch_to.frame(driver.find_element_by_xpath("//a[@href='/szdw/']"))
+    driver.find_element_by_xpath("//a[@href='/szdw/']").click()
+    '''
+
+    '''
+    dwlx = driver.find_element_by_id("dwlx")
+    dwlx.find_element_by_xpath("//option[@value='0']").click()
+    dwh = driver.find_element_by_id('dwh')
+    driver.find_element_by_xpath("//option[@value='31100']").click()
+    driver.find_element_by_xpath('//a[@onclick="myPagination(2)"]').click()
+    '''
+
+    #driver.find_element_by_xpath('//ul[@class="o1234"]/li[6]').click()
+
+    html = driver.page_source
+    #current = driver.current_window_handle
+
+    soup = BeautifulSoup(html, 'lxml')
+    #print(soup)
+
+    print(1)
+    table = soup.find('td', {'width': '748'}).find_all('a')#, {'class': 'uk-panel uk-panel-box tm-panel-card '})
+    print(table)
+
+    for person in table:
+        #driver.switch_to.window(current)
+        #print(person)
+        #person = person.find('a')
+        print(2)
+
+        name = ''.join(person.get_text().split())
+        if name == '':
+            continue
+        #web = 'http://eie.gzu.edu.cn' + person.attrs.get('href').replace('../', 'http://cs.sdufe.edu.cn/')
+        try:
+            #name = ''.join(person.get_text().split('：')[1].split()).replace('职称', '')
+            web = '' + person.attrs.get('href').replace('../', 'http://jsj.imau.edu.cn/')
+            #email = ''.join(person.get_text().split(':')[-1].split())
+
+            '''
+            path = "//a[@href=\'" + web + "\']"
+            #print(path)
+            driver.find_element_by_link_text(name).click()
+            time.sleep(1)
+            for handle in driver.window_handles:
+                if handle != current:
+                    driver.switch_to.window(handle)
+            '''
+
+            print(web)
+            #name = person.get_text().strip()
+            #email = person.find_all('div', {'class': 'IT_x2'})[-1].get_text().split('：')[-1].strip()
+
+            driver.get(web)
+            time.sleep(0.5)
+            html = driver.page_source
+            #print(html)
+
+            email = rex.findall(html)
+            print(email)
+            email = email[0].strip()
+
+            #soup = BeautifulSoup(html, 'lxml')
+            #email = soup.find('table', {'width': '100%%'}).find_all('td')[-7].get_text()
+
+            content = name + '\t' + email + '\n'
+            if name != '' and email != '' and email != 'csmhjy@imu.edu.cn':
+                t.write(content)
+                print(content)
+            name = ''
+            email = ''
+            content = ''
+
+            driver.back()
+            #driver.close()
+        except:
+            print('wrong')
+            #print(name + '\t' + web + '\n')
+            name = ''
+            email = ''
+            content = ''
+            continue
+    t.close()
+    driver.quit()
